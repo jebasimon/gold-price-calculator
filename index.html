@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gold Price Calculator</title>
+  <meta name="google-site-verification" content="ISpQhSo5EcSrDMSnaejEj8m4bbA5f6lcG_-HJVlb9So" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      max-width: 500px;
+      margin: auto;
+      background-color: #fdfdfd;
+      color: #333;
+    }
+    h2 {
+      text-align: center;
+      color: #d49e00;
+    }
+    label {
+      margin-top: 15px;
+      display: block;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 12px;
+      background-color: #ffc107;
+      color: black;
+      font-size: 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #e0a800;
+    }
+    .weight-box {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .weight-box input {
+      flex: 1;
+    }
+    .weight-box select {
+      width: 100px;
+    }
+    #result {
+      margin-top: 25px;
+      font-size: 20px;
+      color: #003366;
+      text-align: center;
+      white-space: pre-line;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Gold Price Calculator</h2>
+
+  <label>Price per gram (₹):</label>
+  <input type="number" id="price" placeholder="Ex: 120" />
+
+  <label>Weight & Unit:</label>
+  <div class="weight-box">
+    <input type="number" id="weight" placeholder="Weight" />
+    <select id="unit">
+      <option value="mg">mg</option>
+      <option value="g" selected>g</option>
+      <option value="kg">kg</option>
+      <option value="pavan">pavan (8g)</option>
+    </select>
+  </div>
+
+  <label>GST % (optional):</label>
+  <input type="number" id="gst" placeholder="Ex: 3" />
+
+  <label>Wastage % (optional):</label>
+  <input type="number" id="wastage" placeholder="Ex: 5" />
+
+  <button onclick="calculate()">Calculate</button>
+
+  <div id="result"></div>
+
+  <script>
+    // ✅ Fetch gold rate from gold.json and auto-fill
+    fetch("gold.json")
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById("price").value = data.rate_per_gram;
+      })
+      .catch(error => {
+        console.log("Failed to load gold rate:", error);
+      });
+
+    function calculate() {
+      const pricePerGram = parseFloat(document.getElementById("price").value);
+      const weight = parseFloat(document.getElementById("weight").value);
+      const unit = document.getElementById("unit").value;
+      const gst = parseFloat(document.getElementById("gst").value) || 0;
+      const wastage = parseFloat(document.getElementById("wastage").value) || 0;
+
+      if (isNaN(pricePerGram) || isNaN(weight)) {
+        document.getElementById("result").innerText = "Enter valid price and weight.";
+        return;
+      }
+
+      let weightInGrams = 0;
+      switch (unit) {
+        case "mg": weightInGrams = weight / 1000; break;
+        case "g": weightInGrams = weight; break;
+        case "kg": weightInGrams = weight * 1000; break;
+        case "pavan": weightInGrams = weight * 8; break;
+      }
+
+      const base = pricePerGram * weightInGrams;
+      const gstAmount = (base * gst) / 100;
+      const wastageAmount = (base * wastage) / 100;
+      const total = base + gstAmount + wastageAmount;
+
+      const resultText = `Total Price: ₹${total.toFixed(2)}\n(${numberToWords(total)})`;
+      document.getElementById("result").innerText = resultText;
+    }
+
+    function numberToWords(num) {
+      const a = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven",
+        "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+      const b = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+
+      function convertToWords(n) {
+        if (n < 20) return a[n];
+        if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
+        if (n < 1000) return a[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " and " + convertToWords(n % 100) : "");
+        if (n < 100000) return convertToWords(Math.floor(n / 1000)) + " Thousand" + (n % 1000 ? " " + convertToWords(n % 1000) : "");
+        return "Amount too large";
+      }
+
+      let [rupees, paise] = num.toFixed(2).split(".");
+      rupees = parseInt(rupees);
+      paise = parseInt(paise);
+
+      let words = convertToWords(rupees) + " Rupees";
+
+      if (paise > 0) {
+        words += " and " + convertToWords(paise) + " Paise";
+      }
+
+      return words;
+    }
+  </script>
+
+</body>
+</html>
